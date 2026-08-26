@@ -191,6 +191,7 @@
     .hospital-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 0.85rem; transition: box-shadow 0.2s; word-break: break-word; }
     .hospital-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .hospital-card.match-all { border-left: 5px solid #16a34a; }
+    .hospital-card.match-partial { border-left: 5px solid #dc2626; }
 
     .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem; flex-wrap: wrap; gap: 0.4rem; }
     .hospital-title-group { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
@@ -216,6 +217,7 @@
 
     .match-tag { font-size: 0.75rem; padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600; white-space: nowrap; }
     .match-tag.full { background: #dcfce7; color: #15803d; }
+    .match-tag.off { background: #fee2e2; color: #991b1b; }
 
     .cap-grid { display: grid; grid-template-columns: 1fr; gap: 0.4rem; margin-top: 0.6rem; }
     @media (min-width: 480px) { .cap-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
@@ -980,33 +982,53 @@
       let results = [];
 
       hospitals.forEach(h => {
-        let matchCount = 0;
+        let hasCapCount = 0;
+        let isFullyAvailable = true;
         let dist = (userLat && userLng) ? calcDistance(userLat, userLng, h.lat, h.lng) : null;
 
-        // 僅計算勾選條件中，於該時間點「確實可提供服務」的項目數
-        selectedCaps.forEach(cap => {
-          const capObj = h.caps[cap];
-          if (capObj && capObj.s === "●") {
-            if (!isCapTimeRestricted(capObj, targetDt)) matchCount++;
-          }
-        });
+        if (selectedCaps.length > 0) {
+          // 檢查醫院是否「擁有」這些專科 (不論是否在服務時段內)
+          selectedCaps.forEach(cap => {
+            const capObj = h.caps[cap];
+            if (capObj && capObj.s === "●") {
+              hasCapCount++;
+              if (isCapTimeRestricted(capObj, targetDt)) {
+                isFullyAvailable = false; // 有專科但非服務時段
+              }
+            } else {
+              isFullyAvailable = false; // 連專科都沒有
+            }
+          });
+        }
 
         const isNameMatch = h.name.toLowerCase().includes(query);
 
         if (selectedCaps.length > 0) {
-          // 只有在所選條件於該時段「完全可服務」時才判定為符合
-          if (matchCount === selectedCaps.length && isNameMatch) {
-            results.push({ hospital: h, matchCount, totalSelected: selectedCaps.length, dist: dist ? parseFloat(dist) : null });
+          // 只要醫院「具備」所有勾選的專科能力 (不論是否在時段內)，就顯示卡片！
+          if (hasCapCount === selectedCaps.length && isNameMatch) {
+            results.push({ 
+              hospital: h, 
+              isFullyAvailable, 
+              dist: dist ? parseFloat(dist) : null 
+            });
           }
         } else {
           if (isNameMatch) {
-            results.push({ hospital: h, matchCount: 0, totalSelected: 0, dist: dist ? parseFloat(dist) : null });
+            results.push({ 
+              hospital: h, 
+              isFullyAvailable: true, 
+              dist: dist ? parseFloat(dist) : null 
+            });
           }
         }
       });
 
       const levelOrder = { "重度級": 4, "中度級": 3, "一般級": 2, "專科急診": 1 };
       results.sort((a, b) => {
+        // 先排完全可處置的，再排非服務時段的
+        if (a.isFullyAvailable !== b.isFullyAvailable) {
+          return a.isFullyAvailable ? -1 : 1;
+        }
         if (sortMode === 'dist' && a.dist !== null && b.dist !== null) {
           return a.dist - b.dist;
         }
@@ -1014,7 +1036,7 @@
       });
 
       if (results.length === 0) {
-        container.innerHTML = `<div class="empty-state">目前沒有完全符合勾選條件（且於該時段可處置）的醫院。</div>`;
+        container.innerHTML = `<div class="empty-state">目前沒有具備所選專科處置能力的醫院。</div>`;
         return;
       }
 
@@ -1025,7 +1047,7 @@
 
         let capsHtml = '';
         
-        // 【核心機制】：有勾選時「只顯示勾選對應的專科卡片」；無勾選時「顯示所有專科卡片」
+        // 勾選時只顯示該疾病對應專科，未勾選顯示全專科
         const keysToDisplay = selectedCaps.length > 0 ? selectedCaps : Object.keys(capLabels);
 
         keysToDisplay.forEach(capKey => {
@@ -1034,7 +1056,6 @@
             const isTimeRestricted = isCapTimeRestricted(capObj, targetDt);
             
             if (isTimeRestricted) {
-              // 處於非服務時段：依然顯示對應卡片，並標註紅字【非服務時段】
               capsHtml += `
                 <div class="cap-item off-service">
                   ${capLabels[capKey]} <span class="off-service-badge">【非服務時段】</span>
@@ -1042,7 +1063,6 @@
                 </div>
               `;
             } else {
-              // 服務時段內：正常綠色標示
               capsHtml += `
                 <div class="cap-item highlight">
                   ${capLabels[capKey]}
@@ -1053,8 +1073,18 @@
           }
         });
 
+        // 狀態標籤
+        let matchTagHtml = '';
+        if (selectedCaps.length > 0) {
+          if (r.isFullyAvailable) {
+            matchTagHtml = '<span class="match-tag full">完全符合</span>';
+          } else {
+            matchTagHtml = '<span class="match-tag off">非服務時段</span>';
+          }
+        }
+
         const card = document.createElement('div');
-        card.className = `hospital-card match-all`;
+        card.className = `hospital-card ${r.isFullyAvailable ? 'match-all' : 'match-partial'}`;
         card.innerHTML = `
           <div class="card-header">
             <div class="hospital-title-group">
@@ -1064,7 +1094,7 @@
             </div>
             <div style="display: flex; gap: 0.3rem; align-items: center;">
               <a href="${navUrl}" target="_blank" class="btn-nav">🧭 導航</a>
-              ${selectedCaps.length > 0 ? '<span class="match-tag full">完全符合</span>' : ''}
+              ${matchTagHtml}
             </div>
           </div>
           <div class="hospital-phone">
