@@ -72,7 +72,7 @@
     .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.4rem; }
     .toggle-icon { font-size: 0.8rem; transition: transform 0.3s; color: var(--primary); }
     
-    /* 防滾動穿透：加入 overscroll-behavior: contain 防止滑動穿透到背景列表 */
+    /* 防滾動穿透 */
     .panel-content { 
       margin-top: 0.85rem; 
       max-height: 60vh; 
@@ -833,7 +833,6 @@
       );
     }
 
-    // 產生開啟預設地圖導航的 URL
     function getNavUrl(hName, destLat, destLng) {
       const queryDest = encodeURIComponent(`${hName} 急診`);
       if (userLat && userLng) {
@@ -984,6 +983,7 @@
         let matchCount = 0;
         let dist = (userLat && userLng) ? calcDistance(userLat, userLng, h.lat, h.lng) : null;
 
+        // 僅計算勾選條件中，於該時間點「確實可提供服務」的項目數
         selectedCaps.forEach(cap => {
           const capObj = h.caps[cap];
           if (capObj && capObj.s === "●") {
@@ -994,6 +994,7 @@
         const isNameMatch = h.name.toLowerCase().includes(query);
 
         if (selectedCaps.length > 0) {
+          // 只有在所選條件於該時段「完全可服務」時才判定為符合
           if (matchCount === selectedCaps.length && isNameMatch) {
             results.push({ hospital: h, matchCount, totalSelected: selectedCaps.length, dist: dist ? parseFloat(dist) : null });
           }
@@ -1023,6 +1024,8 @@
         const navUrl = getNavUrl(h.name, h.lat, h.lng);
 
         let capsHtml = '';
+        
+        // 【核心機制】：有勾選時「只顯示勾選對應的專科卡片」；無勾選時「顯示所有專科卡片」
         const keysToDisplay = selectedCaps.length > 0 ? selectedCaps : Object.keys(capLabels);
 
         keysToDisplay.forEach(capKey => {
@@ -1031,6 +1034,7 @@
             const isTimeRestricted = isCapTimeRestricted(capObj, targetDt);
             
             if (isTimeRestricted) {
+              // 處於非服務時段：依然顯示對應卡片，並標註紅字【非服務時段】
               capsHtml += `
                 <div class="cap-item off-service">
                   ${capLabels[capKey]} <span class="off-service-badge">【非服務時段】</span>
@@ -1038,6 +1042,7 @@
                 </div>
               `;
             } else {
+              // 服務時段內：正常綠色標示
               capsHtml += `
                 <div class="cap-item highlight">
                   ${capLabels[capKey]}
