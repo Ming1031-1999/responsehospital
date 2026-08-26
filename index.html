@@ -46,7 +46,15 @@
     .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.4rem; }
     .toggle-icon { font-size: 0.8rem; transition: transform 0.3s; color: var(--primary); }
     
-    .panel-content { margin-top: 0.85rem; max-height: 70vh; overflow-y: auto; padding-right: 0.2rem; }
+    /* 防滾動穿透：加入 overscroll-behavior: contain 防止滑動穿透到背景列表 */
+    .panel-content { 
+      margin-top: 0.85rem; 
+      max-height: 60vh; 
+      overflow-y: auto; 
+      padding-right: 0.2rem; 
+      overscroll-behavior: contain; 
+      -webkit-overflow-scrolling: touch; 
+    }
     .panel-content.collapsed { display: none; }
 
     .btn-reset { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.8rem; text-decoration: underline; padding: 0.2rem 0.4rem; }
@@ -115,21 +123,31 @@
     }
     .btn-reset-full:active { background: #f1f5f9; }
 
-    /* 已選擇條件狀態列（當前生效的條件） */
+    /* 已選擇條件狀態列（可橫向滑動、單鍵刪除） */
     .active-filter-bar {
       background: #ffffff; border: 1px solid #bfdbfe; border-left: 5px solid var(--primary);
-      border-radius: 10px; padding: 0.75rem 0.85rem; margin-bottom: 0.85rem;
+      border-radius: 10px; padding: 0.65rem 0.85rem; margin-bottom: 0.85rem;
       display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
     .active-filter-bar.empty { display: none; }
-    .active-tags-wrapper { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; flex: 1; }
-    .active-filter-label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-right: 0.2rem; }
+    .active-tags-wrapper { 
+      display: flex; gap: 0.4rem; align-items: center; flex: 1; 
+      overflow-x: auto; padding-bottom: 0.1rem; -webkit-overflow-scrolling: touch; 
+    }
+    .active-filter-label { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); flex-shrink: 0; }
+    
     .filter-tag {
-      font-size: 0.78rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 20px;
-      background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; display: inline-flex; align-items: center; gap: 0.2rem;
+      font-size: 0.78rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px;
+      background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; 
+      display: inline-flex; align-items: center; gap: 0.3rem; flex-shrink: 0;
     }
     .filter-tag.preset-tag { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+    .filter-tag .tag-remove {
+      font-size: 0.85rem; font-weight: 900; cursor: pointer; opacity: 0.7; padding: 0 0.1rem;
+    }
+    .filter-tag .tag-remove:hover { opacity: 1; }
+
     .btn-inline-reset {
       background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 0.35rem 0.65rem;
       border-radius: 8px; font-size: 0.8rem; font-weight: 700; cursor: pointer; flex-shrink: 0;
@@ -185,7 +203,7 @@
       <button class="btn-gps" onclick="getLocation()">讀取 GPS</button>
     </div>
     <div class="datetime-box">
-      <span>🕒 當前時間：</span>
+      <span>🕒</span>
       <span class="time-display" id="clockDisplay">載入中...</span>
       <button type="button" class="btn-time-mode" id="timeModeBtn" onclick="toggleTimeMode()">即時連線中</button>
       <input type="datetime-local" id="customDatetimeInput" style="display:none;" onchange="onCustomTimeChange()">
@@ -203,7 +221,7 @@
         <button class="btn-reset" onclick="event.stopPropagation(); resetFilters();">清除全部</button>
       </div>
 
-      <!-- 可收合面板主體 -->
+      <!-- 可收合面板主體（已加鎖滑動，不穿透） -->
       <div id="panelContent" class="panel-content">
         <!-- 特殊急症快捷選單 -->
         <div class="category-group" style="background: #fff5f5; padding: 0.5rem; border-radius: 8px; border: 1px solid #fecaca;">
@@ -321,7 +339,7 @@
         </div>
 
         <div class="panel-actions">
-          <button type="button" class="btn-submit" onclick="submitFilters()">✅ 套用篩選並看結果</button>
+          <button type="button" class="btn-submit" id="btnSubmitCount" onclick="submitFilters()">✅ 查看符合醫院</button>
           <button type="button" class="btn-reset-full" onclick="resetFilters()">🔄 重設</button>
         </div>
       </div>
@@ -329,12 +347,12 @@
 
     <!-- 醫院顯示區域 -->
     <div id="hospitalDisplaySection">
-      <!-- 頂部實時顯示：當前已選擇之條件標籤與重設按鈕 -->
+      <!-- 頂部實時顯示：當前已選擇之條件標籤（支援單點移除與橫滑） -->
       <div id="activeFilterBar" class="active-filter-bar empty">
         <div class="active-tags-wrapper" id="activeTagsContainer">
-          <span class="active-filter-label">已選擇需求：</span>
+          <span class="active-filter-label">已選：</span>
         </div>
-        <button type="button" class="btn-inline-reset" onclick="resetFilters()">🔄 清空重設</button>
+        <button type="button" class="btn-inline-reset" onclick="resetFilters()">🔄 清空</button>
       </div>
 
       <div class="search-box">
@@ -353,7 +371,7 @@
     let userLat = null;
     let userLng = null;
 
-    // 時間實時連動設定
+    // 時間實時連動設定（隱藏年份與秒數）
     let isLiveTimeMode = true;
     let activeEvaluatedDate = new Date();
     const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
@@ -367,17 +385,14 @@
 
     function renderClockDisplay() {
       const d = activeEvaluatedDate;
-      const yr = d.getFullYear();
       const mo = String(d.getMonth() + 1).padStart(2, '0');
       const da = String(d.getDate()).padStart(2, '0');
       const wk = weekDays[d.getDay()];
       const hr = String(d.getHours()).padStart(2, '0');
       const mi = String(d.getMinutes()).padStart(2, '0');
-      const se = String(d.getSeconds()).padStart(2, '0');
 
-      document.getElementById('clockDisplay').innerText = `${yr}/${mo}/${da} (${wk}) ${hr}:${mi}:${se}`;
-      
-      // 當秒數跳動且有條件時重新評估時間關聯性
+      // 時間格式：08/26 (週三) 19:48
+      document.getElementById('clockDisplay').innerText = `${mo}/${da} (${wk}) ${hr}:${mi}`;
       filterHospitals();
     }
 
@@ -386,19 +401,16 @@
       const btn = document.getElementById('timeModeBtn');
 
       if (isLiveTimeMode) {
-        // 切換為自訂時間模式
         isLiveTimeMode = false;
         btn.innerText = '自訂時間中 (點擊恢復)';
         btn.style.background = '#fef3c7';
         btn.style.color = '#d97706';
         
-        // 設定選取器初值
         const localIso = new Date(activeEvaluatedDate.getTime() - (activeEvaluatedDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
         customInput.value = localIso;
         customInput.style.display = 'inline-block';
         customInput.click();
       } else {
-        // 恢復即時網路時間模式
         isLiveTimeMode = true;
         btn.innerText = '即時連線中';
         btn.style.background = '#dbeafe';
@@ -416,7 +428,6 @@
       }
     }
 
-    // 每秒同步更新時間
     setInterval(updateClock, 1000);
 
     const presetNames = {
@@ -730,7 +741,6 @@
       btn.querySelector('span').textContent = willExpand ? '📋 收合科別／處置能力篩選' : '📋 展開完整科別／處置能力篩選';
     }
 
-    // 自動捲動跳轉至醫院列表區域
     function scrollToHospitalSection() {
       const target = document.getElementById('hospitalDisplaySection');
       if (target) {
@@ -738,7 +748,6 @@
       }
     }
 
-    // 手動按「✅ 套用篩選」按鈕
     function submitFilters() {
       filterHospitals();
       collapsePanel();
@@ -791,7 +800,6 @@
       preset_hbo: ['hbo']
     };
 
-    // 點選急症快捷卡片：連動勾選、即時過濾、自動收合面板並跳轉到醫院頁面
     function togglePreset(presetId, targetCaps) {
       const isChecked = document.getElementById(presetId).checked;
       targetCaps.forEach(capVal => {
@@ -810,10 +818,22 @@
       });
       syncPresetCardStyle(presetId);
       filterHospitals();
+    }
 
-      // 點選快捷急症時，自動收合面板並將視頭跳轉到醫院清單
-      collapsePanel();
-      scrollToHospitalSection();
+    function removePreset(pId) {
+      const cb = document.getElementById(pId);
+      if (cb) {
+        cb.checked = false;
+        togglePreset(pId, presetCapMap[pId]);
+      }
+    }
+
+    function removeCap(capVal) {
+      const cb = document.querySelector(`.panel input[type="checkbox"][value="${capVal}"]`);
+      if (cb) {
+        cb.checked = false;
+        filterHospitals();
+      }
     }
 
     function syncPresetCardStyle(presetId) {
@@ -844,27 +864,26 @@
       return false;
     }
 
-    // 更新頂部「已選擇疾病/科別標籤」狀態列
     function updateActiveFilterBar() {
       const bar = document.getElementById('activeFilterBar');
       const container = document.getElementById('activeTagsContainer');
-      container.innerHTML = '<span class="active-filter-label">已選擇需求：</span>';
+      const btnSubmit = document.getElementById('btnSubmitCount');
+      
+      container.innerHTML = '<span class="active-filter-label">已選：</span>';
 
       let activeCount = 0;
 
-      // 1. 檢查急症快捷標籤
       Object.keys(presetCapMap).forEach(pId => {
         const cb = document.getElementById(pId);
         if (cb && cb.checked) {
           activeCount++;
           const tag = document.createElement('span');
           tag.className = 'filter-tag preset-tag';
-          tag.innerHTML = `🚑 ${presetNames[pId] || pId}`;
+          tag.innerHTML = `🚑 ${presetNames[pId] || pId} <span class="tag-remove" onclick="removePreset('${pId}')">✕</span>`;
           container.appendChild(tag);
         }
       });
 
-      // 2. 檢查個別勾選的處置能力（扣除已被預設覆蓋的）
       const selectedCapCbs = Array.from(document.querySelectorAll('#capsSection input[type="checkbox"]:checked'));
       selectedCapCbs.forEach(cb => {
         const val = cb.value;
@@ -877,15 +896,17 @@
           activeCount++;
           const tag = document.createElement('span');
           tag.className = 'filter-tag';
-          tag.innerHTML = `🩺 ${capLabels[val] || val}`;
+          tag.innerHTML = `🩺 ${capLabels[val] || val} <span class="tag-remove" onclick="removeCap('${val}')">✕</span>`;
           container.appendChild(tag);
         }
       });
 
       if (activeCount > 0) {
         bar.classList.remove('empty');
+        btnSubmit.innerText = `✅ 查看符合醫院 (已選 ${activeCount} 項)`;
       } else {
         bar.classList.add('empty');
+        btnSubmit.innerText = `✅ 查看符合醫院`;
       }
     }
 
@@ -894,7 +915,6 @@
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const sortMode = document.getElementById('sortSelect').value;
       
-      // 使用即時或自訂日期進行比對
       const targetDt = activeEvaluatedDate;
 
       updateActiveFilterBar();
@@ -995,7 +1015,6 @@
       expandPanel();
     }
 
-    // 初始化啟動即時鐘
     updateClock();
     filterHospitals();
   </script>
