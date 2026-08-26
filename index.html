@@ -29,13 +29,39 @@
     }
     
     .location-box { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; }
-    .datetime-box { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 8px; border: 1px solid #bfdbfe; flex-wrap: wrap; }
+    .datetime-box { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 8px; border: 1px solid #bfdbfe; flex-wrap: wrap; cursor: pointer; user-select: none; }
     
     .btn-gps { background: var(--primary); color: white; border: none; padding: 0.5rem 0.85rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background 0.2s; flex-shrink: 0; }
     .btn-gps:active { background: var(--primary-hover); }
     
-    .time-display { font-family: monospace, monospace; font-size: 0.92rem; font-weight: 700; color: #1e3a8a; }
-    .btn-time-mode { background: #dbeafe; color: #1d4ed8; border: none; padding: 0.2rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-left: 0.2rem; }
+    .time-display { font-family: monospace, monospace; font-size: 0.92rem; font-weight: 700; color: #1e3a8a; display: inline-flex; align-items: center; }
+
+    /* 冒號閃爍動畫 */
+    .time-colon {
+      animation: blink 1s infinite;
+      display: inline-block;
+      width: 0.4em;
+      text-align: center;
+    }
+    .time-colon.paused {
+      animation: none;
+      opacity: 1;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.15; }
+    }
+
+    .custom-badge {
+      font-size: 0.72rem;
+      background: #fef3c7;
+      color: #d97706;
+      border: 1px solid #fde68a;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-weight: 700;
+      margin-left: 0.2rem;
+    }
 
     .layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
     @media (min-width: 900px) { .layout { grid-template-columns: 340px 1fr; gap: 1.25rem; } }
@@ -202,11 +228,11 @@
       <span>📍 當前位置：<span id="locationStatus" style="color: var(--text-muted);">未定位</span></span>
       <button class="btn-gps" onclick="getLocation()">讀取 GPS</button>
     </div>
-    <div class="datetime-box">
+    <div class="datetime-box" onclick="toggleTimeMode()" title="點擊切換即時/自訂時間">
       <span>🕒</span>
       <span class="time-display" id="clockDisplay">載入中...</span>
-      <button type="button" class="btn-time-mode" id="timeModeBtn" onclick="toggleTimeMode()">即時連線中</button>
-      <input type="datetime-local" id="customDatetimeInput" style="display:none;" onchange="onCustomTimeChange()">
+      <span id="customModeBadge" class="custom-badge" style="display:none;">自訂中</span>
+      <input type="datetime-local" id="customDatetimeInput" style="display:none;" onchange="onCustomTimeChange()" onclick="event.stopPropagation()">
     </div>
   </div>
 
@@ -371,10 +397,10 @@
     let userLat = null;
     let userLng = null;
 
-    // 時間實時連動設定（隱藏年份與秒數）
+    // 時間實時連動設定（星期簡化為 日、一、二、三...）
     let isLiveTimeMode = true;
     let activeEvaluatedDate = new Date();
-    const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+    const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
     function updateClock() {
       if (isLiveTimeMode) {
@@ -391,20 +417,20 @@
       const hr = String(d.getHours()).padStart(2, '0');
       const mi = String(d.getMinutes()).padStart(2, '0');
 
-      // 時間格式：08/26 (週三) 19:48
-      document.getElementById('clockDisplay').innerText = `${mo}/${da} (${wk}) ${hr}:${mi}`;
+      const colonClass = isLiveTimeMode ? "time-colon" : "time-colon paused";
+
+      // 時間格式：08/26 (三) 19:53
+      document.getElementById('clockDisplay').innerHTML = `${mo}/${da} (${wk}) ${hr}<span class="${colonClass}">:</span>${mi}`;
       filterHospitals();
     }
 
     function toggleTimeMode() {
       const customInput = document.getElementById('customDatetimeInput');
-      const btn = document.getElementById('timeModeBtn');
+      const badge = document.getElementById('customModeBadge');
 
       if (isLiveTimeMode) {
         isLiveTimeMode = false;
-        btn.innerText = '自訂時間中 (點擊恢復)';
-        btn.style.background = '#fef3c7';
-        btn.style.color = '#d97706';
+        badge.style.display = 'inline-block';
         
         const localIso = new Date(activeEvaluatedDate.getTime() - (activeEvaluatedDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
         customInput.value = localIso;
@@ -412,9 +438,7 @@
         customInput.click();
       } else {
         isLiveTimeMode = true;
-        btn.innerText = '即時連線中';
-        btn.style.background = '#dbeafe';
-        btn.style.color = '#1d4ed8';
+        badge.style.display = 'none';
         customInput.style.display = 'none';
         updateClock();
       }
@@ -995,7 +1019,7 @@
             ${selectedCaps.length > 0 ? '<span class="match-tag full">完全符合</span>' : ''}
           </div>
           <div class="hospital-phone">
-            📞 直撥電話：<a href="tel:${h.telUrl}">${h.phone}</a>
+            📞 直播電話：<a href="tel:${h.telUrl}">${h.phone}</a>
           </div>
           <div class="cap-grid">
             ${capsHtml}
