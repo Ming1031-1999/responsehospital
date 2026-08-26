@@ -149,7 +149,7 @@
     }
     .btn-reset-full:active { background: #f1f5f9; }
 
-    /* 已選擇條件狀態列（可橫向滑動、單鍵刪除） */
+    /* 已選擇條件狀態列 */
     .active-filter-bar {
       background: #ffffff; border: 1px solid #bfdbfe; border-left: 5px solid var(--primary);
       border-radius: 10px; padding: 0.65rem 0.85rem; margin-bottom: 0.85rem;
@@ -197,6 +197,14 @@
     .hospital-name { font-size: 1.1rem; font-weight: 700; color: var(--text); }
     .hospital-dist { font-size: 0.85rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 0.15rem 0.45rem; border-radius: 6px; display: inline-block; }
     
+    /* 導航按鈕樣式 */
+    .btn-nav {
+      background: #16a34a; color: white; border: none; padding: 0.25rem 0.6rem;
+      border-radius: 6px; font-size: 0.8rem; font-weight: 700; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.2rem; transition: background 0.2s;
+    }
+    .btn-nav:active { background: #15803d; }
+
     .hospital-phone { margin-bottom: 0.6rem; font-size: 0.85rem; font-weight: 600; color: #1e293b; background: #f8fafc; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #f1f5f9; display: inline-block; width: 100%; }
     .hospital-phone a { color: #2563eb; text-decoration: none; word-break: break-all; }
 
@@ -215,7 +223,22 @@
     .cap-item { padding: 0.45rem 0.6rem; border-radius: 6px; font-size: 0.82rem; background: #f1f5f9; border: 1px solid transparent; }
     .cap-item.highlight { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: 600; }
     
+    /* 非服務時段處置能力卡片樣式 */
+    .cap-item.off-service { 
+      background: #fef2f2; 
+      color: #991b1b; 
+      border-color: #fca5a5; 
+      font-weight: 600; 
+    }
+    .off-service-badge {
+      color: #dc2626;
+      font-weight: 800;
+      margin-left: 0.3rem;
+      font-size: 0.78rem;
+    }
+
     .cap-desc { font-size: 0.72rem; color: #475569; margin-top: 0.2rem; font-weight: normal; line-height: 1.35; }
+    .cap-item.off-service .cap-desc { color: #9f1239; }
 
     .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); background: var(--card-bg); border-radius: 12px; border: 1px dashed var(--border); font-size: 0.9rem; }
   </style>
@@ -247,7 +270,7 @@
         <button class="btn-reset" onclick="event.stopPropagation(); resetFilters();">清除全部</button>
       </div>
 
-      <!-- 可收合面板主體（已加鎖滑動，不穿透） -->
+      <!-- 可收合面板主體 -->
       <div id="panelContent" class="panel-content">
         <!-- 特殊急症快捷選單 -->
         <div class="category-group" style="background: #fff5f5; padding: 0.5rem; border-radius: 8px; border: 1px solid #fecaca;">
@@ -373,7 +396,7 @@
 
     <!-- 醫院顯示區域 -->
     <div id="hospitalDisplaySection">
-      <!-- 頂部實時顯示：當前已選擇之條件標籤（支援單點移除與橫滑） -->
+      <!-- 頂部實時顯示已選擇之條件標籤 -->
       <div id="activeFilterBar" class="active-filter-bar empty">
         <div class="active-tags-wrapper" id="activeTagsContainer">
           <span class="active-filter-label">已選：</span>
@@ -397,7 +420,7 @@
     let userLat = null;
     let userLng = null;
 
-    // 時間實時連動設定（星期簡化為 日、一、二、三...）
+    // 時間實時連動設定
     let isLiveTimeMode = true;
     let activeEvaluatedDate = new Date();
     const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
@@ -419,7 +442,6 @@
 
       const colonClass = isLiveTimeMode ? "time-colon" : "time-colon paused";
 
-      // 時間格式：08/26 (三) 19:53
       document.getElementById('clockDisplay').innerHTML = `${mo}/${da} (${wk}) ${hr}<span class="${colonClass}">:</span>${mi}`;
       filterHospitals();
     }
@@ -811,6 +833,16 @@
       );
     }
 
+    // 產生開啟預設地圖導航的 URL
+    function getNavUrl(hName, destLat, destLng) {
+      const queryDest = encodeURIComponent(`${hName} 急診`);
+      if (userLat && userLng) {
+        return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${queryDest}&destination_place_id=&travelmode=driving`;
+      } else {
+        return `https://www.google.com/maps/search/?api=1&query=${queryDest}`;
+      }
+    }
+
     const presetCapMap = {
       preset_acs: ['cv_med'],
       preset_stroke: ['neuro_med', 'neuro_surg'],
@@ -988,6 +1020,7 @@
       results.forEach(r => {
         const h = r.hospital;
         let distHtml = r.dist !== null ? `<span class="hospital-dist">約 ${r.dist} km</span>` : '';
+        const navUrl = getNavUrl(h.name, h.lat, h.lng);
 
         let capsHtml = '';
         const keysToDisplay = selectedCaps.length > 0 ? selectedCaps : Object.keys(capLabels);
@@ -996,7 +1029,15 @@
           const capObj = h.caps[capKey];
           if (capObj && capObj.s === "●") {
             const isTimeRestricted = isCapTimeRestricted(capObj, targetDt);
-            if (!isTimeRestricted) {
+            
+            if (isTimeRestricted) {
+              capsHtml += `
+                <div class="cap-item off-service">
+                  ${capLabels[capKey]} <span class="off-service-badge">【非服務時段】</span>
+                  ${capObj.d ? `<div class="cap-desc">${capObj.d}</div>` : ''}
+                </div>
+              `;
+            } else {
               capsHtml += `
                 <div class="cap-item highlight">
                   ${capLabels[capKey]}
@@ -1016,7 +1057,10 @@
               ${distHtml}
               <span class="badge badge-${h.level}">${h.level}</span>
             </div>
-            ${selectedCaps.length > 0 ? '<span class="match-tag full">完全符合</span>' : ''}
+            <div style="display: flex; gap: 0.3rem; align-items: center;">
+              <a href="${navUrl}" target="_blank" class="btn-nav">🧭 導航</a>
+              ${selectedCaps.length > 0 ? '<span class="match-tag full">完全符合</span>' : ''}
+            </div>
           </div>
           <div class="hospital-phone">
             📞 直播電話：<a href="tel:${h.telUrl}">${h.phone}</a>
