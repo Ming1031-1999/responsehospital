@@ -28,18 +28,21 @@
       .top-bar { flex-direction: row; align-items: center; justify-content: space-between; }
     }
     
-    .location-box, .datetime-box { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; }
+    .location-box { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; }
+    .datetime-box { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; background: #ffffff; padding: 0.4rem 0.65rem; border-radius: 8px; border: 1px solid #bfdbfe; flex-wrap: wrap; }
+    
     .btn-gps { background: var(--primary); color: white; border: none; padding: 0.5rem 0.85rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background 0.2s; flex-shrink: 0; }
     .btn-gps:active { background: var(--primary-hover); }
     
-    .datetime-input { border: 1px solid var(--border); padding: 0.4rem 0.5rem; border-radius: 6px; font-size: 0.85rem; outline: none; background: white; width: 100%; max-width: 220px; }
+    .time-display { font-family: monospace, monospace; font-size: 0.92rem; font-weight: 700; color: #1e3a8a; }
+    .btn-time-mode { background: #dbeafe; color: #1d4ed8; border: none; padding: 0.2rem 0.45rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-left: 0.2rem; }
 
     .layout { display: grid; grid-template-columns: 1fr; gap: 1rem; }
     @media (min-width: 900px) { .layout { grid-template-columns: 340px 1fr; gap: 1.25rem; } }
 
     /* 篩選面板與摺疊設計 */
     .panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 0.85rem; height: fit-content; position: sticky; top: 0.5rem; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 0.2rem 0; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 0.2rem 0; flex-wrap: wrap; gap: 0.4rem; }
     .panel-title { font-size: 1rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.4rem; }
     .toggle-icon { font-size: 0.8rem; transition: transform 0.3s; color: var(--primary); }
     
@@ -175,15 +178,17 @@
 </head>
 <body>
 
-  <!-- 全局狀態：GPS 與時間設定 -->
+  <!-- 全局狀態：GPS 與即時網路時間 -->
   <div class="top-bar">
     <div class="location-box">
       <span>📍 當前位置：<span id="locationStatus" style="color: var(--text-muted);">未定位</span></span>
       <button class="btn-gps" onclick="getLocation()">讀取 GPS</button>
     </div>
     <div class="datetime-box">
-      <span>🕒 後送時間：</span>
-      <input type="datetime-local" id="datetimeInput" class="datetime-input" onchange="filterHospitals()">
+      <span>🕒 當前時間：</span>
+      <span class="time-display" id="clockDisplay">載入中...</span>
+      <button type="button" class="btn-time-mode" id="timeModeBtn" onclick="toggleTimeMode()">即時連線中</button>
+      <input type="datetime-local" id="customDatetimeInput" style="display:none;" onchange="onCustomTimeChange()">
     </div>
   </div>
 
@@ -327,7 +332,7 @@
       <!-- 頂部實時顯示：當前已選擇之條件標籤與重設按鈕 -->
       <div id="activeFilterBar" class="active-filter-bar empty">
         <div class="active-tags-wrapper" id="activeTagsContainer">
-          <span class="active-filter-label">已選擇：</span>
+          <span class="active-filter-label">已選擇需求：</span>
         </div>
         <button type="button" class="btn-inline-reset" onclick="resetFilters()">🔄 清空重設</button>
       </div>
@@ -347,6 +352,72 @@
   <script>
     let userLat = null;
     let userLng = null;
+
+    // 時間實時連動設定
+    let isLiveTimeMode = true;
+    let activeEvaluatedDate = new Date();
+    const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+    function updateClock() {
+      if (isLiveTimeMode) {
+        activeEvaluatedDate = new Date();
+        renderClockDisplay();
+      }
+    }
+
+    function renderClockDisplay() {
+      const d = activeEvaluatedDate;
+      const yr = d.getFullYear();
+      const mo = String(d.getMonth() + 1).padStart(2, '0');
+      const da = String(d.getDate()).padStart(2, '0');
+      const wk = weekDays[d.getDay()];
+      const hr = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      const se = String(d.getSeconds()).padStart(2, '0');
+
+      document.getElementById('clockDisplay').innerText = `${yr}/${mo}/${da} (${wk}) ${hr}:${mi}:${se}`;
+      
+      // 當秒數跳動且有條件時重新評估時間關聯性
+      filterHospitals();
+    }
+
+    function toggleTimeMode() {
+      const customInput = document.getElementById('customDatetimeInput');
+      const btn = document.getElementById('timeModeBtn');
+
+      if (isLiveTimeMode) {
+        // 切換為自訂時間模式
+        isLiveTimeMode = false;
+        btn.innerText = '自訂時間中 (點擊恢復)';
+        btn.style.background = '#fef3c7';
+        btn.style.color = '#d97706';
+        
+        // 設定選取器初值
+        const localIso = new Date(activeEvaluatedDate.getTime() - (activeEvaluatedDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        customInput.value = localIso;
+        customInput.style.display = 'inline-block';
+        customInput.click();
+      } else {
+        // 恢復即時網路時間模式
+        isLiveTimeMode = true;
+        btn.innerText = '即時連線中';
+        btn.style.background = '#dbeafe';
+        btn.style.color = '#1d4ed8';
+        customInput.style.display = 'none';
+        updateClock();
+      }
+    }
+
+    function onCustomTimeChange() {
+      const val = document.getElementById('customDatetimeInput').value;
+      if (val) {
+        activeEvaluatedDate = new Date(val);
+        renderClockDisplay();
+      }
+    }
+
+    // 每秒同步更新時間
+    setInterval(updateClock, 1000);
 
     const presetNames = {
       preset_acs: "急性冠心症(PCI)",
@@ -633,12 +704,6 @@
       }
     ];
 
-    function initDateTime() {
-      const now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      document.getElementById('datetimeInput').value = now.toISOString().slice(0, 16);
-    }
-
     function togglePanel() {
       const content = document.getElementById('panelContent');
       content.classList.contains('collapsed') ? expandPanel() : collapsePanel();
@@ -803,7 +868,6 @@
       const selectedCapCbs = Array.from(document.querySelectorAll('#capsSection input[type="checkbox"]:checked'));
       selectedCapCbs.forEach(cb => {
         const val = cb.value;
-        // 若該能力已被已點選的急症快捷涵蓋，就不重複秀出簡短名單
         const coveredByPreset = Object.keys(presetCapMap).some(pId => {
           const pCb = document.getElementById(pId);
           return pCb && pCb.checked && presetCapMap[pId].includes(val);
@@ -829,8 +893,9 @@
       const selectedCaps = Array.from(document.querySelectorAll('.panel input[type="checkbox"][value]:checked')).map(cb => cb.value);
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const sortMode = document.getElementById('sortSelect').value;
-      const dtVal = document.getElementById('datetimeInput').value;
-      const targetDt = dtVal ? new Date(dtVal) : new Date();
+      
+      // 使用即時或自訂日期進行比對
+      const targetDt = activeEvaluatedDate;
 
       updateActiveFilterBar();
 
@@ -926,12 +991,12 @@
       syncAllPresetCardStyles();
       const capsSection = document.getElementById('capsSection');
       if (!capsSection.classList.contains('collapsed')) toggleCapsSection();
-      initDateTime();
       filterHospitals();
       expandPanel();
     }
 
-    initDateTime();
+    // 初始化啟動即時鐘
+    updateClock();
     filterHospitals();
   </script>
 </body>
