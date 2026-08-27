@@ -515,9 +515,10 @@
       toxicology: "毒藥物緊急處置 (含血清)"
     };
 
+    // 醫院清單：全數替換為現場實地測量的急診救護車道/入口精準座標
     const hospitals = [
       {
-        name: "林口長庚紀念醫院", level: "重度級", phone: "03-3281200 分機 2143", telUrl: "033281200,2143", lat: 25.0608, lng: 121.3653,
+        name: "林口長庚紀念醫院", level: "重度級", phone: "03-3281200 分機 2143", telUrl: "033281200,2143", lat: 25.060483929221167, lng: 121.36797985949696,
         caps: {
           cv_surg: { s: "●", d: "器官移植、ECMO、繞道、主動脈剝離等" },
           cv_med: { s: "●", d: "24hr 緊急冠狀動脈介入術 (Primary PCI)" },
@@ -543,7 +544,7 @@
         }
       },
       {
-        name: "衛生福利部桃園醫院", level: "重度級", phone: "03-3699721 分機 2135", telUrl: "033699721,2135", lat: 24.9782, lng: 121.2721,
+        name: "衛生福利部桃園醫院", level: "重度級", phone: "03-3699721 分機 2135", telUrl: "033699721,2135", lat: 24.977735813510083, lng: 121.26829272855318,
         caps: {
           cv_surg: { s: "●", d: "複雜心症繞道、大動脈支架、四肢動脈手術" },
           cv_med: { s: "●", d: "24hr 心導管，STEMI 90分鐘內完成 PCI" },
@@ -569,7 +570,7 @@
         }
       },
       {
-        name: "敏盛綜合醫院", level: "中度級", phone: "03-3179599 (急診總機)", telUrl: "033179599", lat: 25.0135, lng: 121.3018,
+        name: "敏盛綜合醫院", level: "中度級", phone: "03-3179599 (急診總機)", telUrl: "033179599", lat: 25.016200675927408, lng: 121.30648988748116,
         caps: {
           cv_surg: { s: "●", d: "ECMO、繞道手術、主動脈剝離手術" },
           cv_med: { s: "●", d: "緊急心導管手術、IABP" },
@@ -593,7 +594,7 @@
         }
       },
       {
-        name: "聖保祿醫院", level: "中度級", phone: "03-3613141 (急診總機)", telUrl: "033613141", lat: 24.9866, lng: 121.3190,
+        name: "聖保祿醫院", level: "中度級", phone: "03-3613141 (急診總機)", telUrl: "033613141", lat: 24.98143206567525, lng: 121.31159430284491,
         caps: {
           cv_surg: { s: "●", d: "平日上班時段提供周邊血管處置 (無ECMO)", timeLimit: { weekdayOnly: true, startHour: 8, endHour: 17 } },
           cv_med: { s: "●", d: "24hr 心導管診治 (無ECMO)" },
@@ -617,7 +618,7 @@
         }
       },
       {
-        name: "衛生福利部桃園療養院", level: "專科急診", phone: "03-3698553 分機 3110、3112", telUrl: "033698553,3110", lat: 24.9792, lng: 121.2694,
+        name: "衛生福利部桃園療養院", level: "專科急診", phone: "03-3698553 分機 3110、3112", telUrl: "033698553,3110", lat: 24.978953614443792, lng: 121.26832267021858,
         caps: {
           cv_surg: { s: "X", d: "無" }, cv_med: { s: "X", d: "無" }, neuro_surg: { s: "X", d: "無" }, neuro_med: { s: "X", d: "無" },
           peds_er: { s: "X", d: "無" }, peds_neo_er: { s: "X", d: "無" }, peds_icu: { s: "X", d: "無" }, peds_neo_icu: { s: "X", d: "無" }, obs: { s: "X", d: "無" },
@@ -628,7 +629,7 @@
         }
       },
       {
-        name: "國軍桃園總醫院", level: "中度級", phone: "03-4799595 分機 325300", telUrl: "034799595,325300", lat: 24.8624, lng: 121.2294,
+        name: "國軍桃園總醫院", level: "中度級", phone: "03-4799595 分機 325300", telUrl: "034799595,325300", lat: 24.87638169865141, lng: 121.23368900610062,
         caps: {
           cv_surg: { s: "●", d: "葉克膜 (ECMO)" },
           cv_med: { s: "●", d: "心臟超音波、心導管" },
@@ -654,7 +655,7 @@
         }
       },
       {
-        name: "聯新國際醫院", level: "中度級", phone: "03-4941234 分機 3100、3199", telUrl: "034941234,3100", lat: 24.9439, lng: 121.2132,
+        name: "聯新國際醫院", level: "中度級", phone: "03-4941234 分機 3100、3199", telUrl: "034941234,3100", lat: 24.946060082531968, lng: 121.20481245750538,
         caps: {
           cv_surg: { s: "●", d: "周邊血管手術 (無 ECMO)" },
           cv_med: { s: "●", d: "24hr 心導管、IABP、節律器" },
@@ -678,7 +679,7 @@
         }
       },
       {
-        name: "天晟醫院", level: "中度級", phone: "03-4629292 分機 22511、22512", telUrl: "034629292,22511", lat: 24.9620, lng: 121.2251,
+        name: "天晟醫院", level: "中度級", phone: "03-4629292 分機 22511、22512", telUrl: "034629292,22511", lat: 24.962466040802138, lng: 121.22876619225099,
         caps: {
           cv_surg: { s: "X", d: "無" },
           cv_med: { s: "●", d: "僅平日上班時間提供心導管介入治療", timeLimit: { weekdayOnly: true, startHour: 8, endHour: 17 } },
@@ -696,7 +697,7 @@
         }
       },
       {
-        name: "臺北榮民總醫院桃園分院", level: "中度級", phone: "03-2868001", telUrl: "032868001", lat: 25.0062, lng: 121.3262,
+        name: "臺北榮民總醫院桃園分院", level: "中度級", phone: "03-2868001", telUrl: "032868001", lat: 25.003384232278815, lng: 121.32539661496115,
         caps: {
           cv_surg: { s: "●", d: "僅平日一~五白天服務", timeLimit: { weekdayOnly: true, startHour: 8, endHour: 17 } },
           cv_med: { s: "●", d: "僅平日一~五白天服務", timeLimit: { weekdayOnly: true, startHour: 8, endHour: 17 } },
@@ -714,7 +715,7 @@
         }
       },
       {
-        name: "天成醫院", level: "一般級", phone: "03-4782350 分機 62511", telUrl: "034782350,62511", lat: 24.9082, lng: 121.1442,
+        name: "天成醫院", level: "一般級", phone: "03-4782350 分機 62511", telUrl: "034782350,62511", lat: 24.90885678514962, lng: 121.15718847595153,
         caps: {
           cv_surg: { s: "X", d: "無" }, cv_med: { s: "X", d: "無" },
           neuro_surg: { s: "●", d: "緊急顱內手術" },
@@ -731,7 +732,7 @@
         }
       },
       {
-        name: "怡仁綜合醫院", level: "一般級", phone: "03-4855566 分機 5119", telUrl: "034855566,5119", lat: 24.9103, lng: 121.1601,
+        name: "怡仁綜合醫院", level: "一般級", phone: "03-4855566 分機 5119", telUrl: "034855566,5119", lat: 24.916953310987967, lng: 121.15507804955094,
         caps: {
           cv_surg: { s: "X", d: "無" }, cv_med: { s: "X", d: "無" },
           neuro_surg: { s: "●", d: "緊急顱內手術" },
@@ -748,7 +749,7 @@
         }
       },
       {
-        name: "衛生福利部新屋分院", level: "一般級", phone: "03-4971986 (急診總機)", telUrl: "034971986", lat: 24.9701, lng: 121.1070,
+        name: "衛生福利部新屋分院", level: "一般級", phone: "03-4971986 (急診總機)", telUrl: "034971986", lat: 24.969919153715736, lng: 121.1071922260732,
         caps: {
           cv_surg: { s: "X", d: "無" }, cv_med: { s: "X", d: "無" }, neuro_surg: { s: "X", d: "無" },
           neuro_med: { s: "●", d: "CT; IVtPA僅週一至週三上班時間", timeLimit: { weekdayOnly: true, customDays: [1,2,3], startHour: 8, endHour: 17 } },
@@ -836,11 +837,11 @@
     }
 
     function getNavUrl(hName, destLat, destLng) {
-      const queryDest = encodeURIComponent(`${hName} 急診`);
+      const dest = `${destLat},${destLng}`;
       if (userLat && userLng) {
-        return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${queryDest}&destination_place_id=&travelmode=driving`;
+        return `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${dest}&travelmode=driving`;
       } else {
-        return `https://www.google.com/maps/search/?api=1&query=${queryDest}`;
+        return `https://www.google.com/maps/search/?api=1&query=${dest}`;
       }
     }
 
@@ -987,16 +988,15 @@
         let dist = (userLat && userLng) ? calcDistance(userLat, userLng, h.lat, h.lng) : null;
 
         if (selectedCaps.length > 0) {
-          // 檢查醫院是否「擁有」這些專科 (不論是否在服務時段內)
           selectedCaps.forEach(cap => {
             const capObj = h.caps[cap];
             if (capObj && capObj.s === "●") {
               hasCapCount++;
               if (isCapTimeRestricted(capObj, targetDt)) {
-                isFullyAvailable = false; // 有專科但非服務時段
+                isFullyAvailable = false;
               }
             } else {
-              isFullyAvailable = false; // 連專科都沒有
+              isFullyAvailable = false;
             }
           });
         }
@@ -1004,7 +1004,6 @@
         const isNameMatch = h.name.toLowerCase().includes(query);
 
         if (selectedCaps.length > 0) {
-          // 只要醫院「具備」所有勾選的專科能力 (不論是否在時段內)，就顯示卡片！
           if (hasCapCount === selectedCaps.length && isNameMatch) {
             results.push({ 
               hospital: h, 
@@ -1025,7 +1024,6 @@
 
       const levelOrder = { "重度級": 4, "中度級": 3, "一般級": 2, "專科急診": 1 };
       results.sort((a, b) => {
-        // 先排完全可處置的，再排非服務時段的
         if (a.isFullyAvailable !== b.isFullyAvailable) {
           return a.isFullyAvailable ? -1 : 1;
         }
@@ -1046,8 +1044,6 @@
         const navUrl = getNavUrl(h.name, h.lat, h.lng);
 
         let capsHtml = '';
-        
-        // 勾選時只顯示該疾病對應專科，未勾選顯示全專科
         const keysToDisplay = selectedCaps.length > 0 ? selectedCaps : Object.keys(capLabels);
 
         keysToDisplay.forEach(capKey => {
@@ -1073,7 +1069,6 @@
           }
         });
 
-        // 狀態標籤
         let matchTagHtml = '';
         if (selectedCaps.length > 0) {
           if (r.isFullyAvailable) {
